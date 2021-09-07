@@ -12,7 +12,7 @@ const inputElevation = document.querySelector('.form__input--elevation');
 class Workout {
     date = new Date();
     id = (Date.now() + '').slice(-10);
-
+    clicks = 0;
 
     constructor(coords, distance, duration) {
         this.coords = coords;
@@ -26,6 +26,10 @@ class Workout {
 
         this.description = `${this.type[0].toUpperCase()}${this.type.slice(1)} on ${months[this.date.getMonth()]}
          ${this.date.getDate()}`;
+    }
+
+    click() {
+        this.clicks++;
     }
 }
 
@@ -67,17 +71,21 @@ class Cycling extends Workout {
 
 class App {
     #map;
+    #mapZoomLevel = 13;
     #mapEvent;
     #workouts = [];
+
 
     constructor() {
         this._getPosition();
         
+        //*Load data from local storage
+        this._getLocalStorage();
+
         //*Event Listeners
-        //Event Listener for form
         form.addEventListener('submit', this._newWorkout.bind(this));
-        //Event Listener to toggle btw input cadence and input elevation
         inputType.addEventListener('change', this._toggleElevationField);
+        containerWorkouts.addEventListener('click', this._moveToPopup.bind(this));
     }
     
     _getPosition() {
@@ -97,7 +105,7 @@ class App {
     
         //Leaflet
         //console.log(this);
-        this.#map = L.map('map').setView(coords, 13);
+        this.#map = L.map('map').setView(coords, this.#mapZoomLevel);
         //console.log(map);
 
         //Tile layer
@@ -108,6 +116,11 @@ class App {
     
         //Event listener for clicks on map
         this.#map.on('click', this._showForm.bind(this));
+
+        //Load marker from local storage object
+        this.#workouts.forEach(work => {
+            this._renderWorkoutMarker(work)
+        });
     }
 
     _showForm(mapE) {
@@ -122,7 +135,7 @@ class App {
 
         form.style.display = 'none';
         form.classList.add('hidden');
-        setTimeout(() => (form.style.display = 'grid'), 1000)
+        setTimeout(() => (form.style.display = 'grid'), 1000);
     }
 
     _toggleElevationField() {
@@ -182,7 +195,8 @@ class App {
         //Hide form + clear input form
         this._hideForm();
 
-        //Display marker
+        //Set Local Storage to all workouts
+        this._setLocalStorage();
     }
 
     _renderWorkoutMarker(workout) {
@@ -247,6 +261,48 @@ class App {
           `;
     
         form.insertAdjacentHTML('afterend', html);
+    }
+
+    _moveToPopup(e) {
+        const workoutEl = e.target.closest('.workout');
+        console.log(workoutEl);
+
+        if (!workoutEl) return;
+
+        const workout = this.#workouts.find(work => work.id === workoutEl.dataset.id);
+        console.log(workout);
+
+        this.#map.setView(workout.coords, this.#mapZoomLevel, {
+            animate: true,
+            pan: {
+                duration: 1
+            }
+        });
+
+        //Using the public interface
+        //workout.click();
+    }
+
+    
+    _setLocalStorage() {
+        localStorage.setItem('workouts', JSON.stringify(this.#workouts));
+    }
+
+    _getLocalStorage() {
+        const data = JSON.parse(localStorage.getItem('workouts'));
+        //console.log(data);
+
+        if (!data) return;
+
+        this.#workouts = data;
+        this.#workouts.forEach(work => {
+            this._renderWorkout(work)
+        })
+    }
+
+    reset() {
+        localStorage.removeItem('workouts');
+        location.reload();
     }
 }
 

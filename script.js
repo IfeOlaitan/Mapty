@@ -68,7 +68,6 @@ class Cycling extends Workout {
 // const cycle1 = new Cycling([39, -12], 5.2, 24, 178);
 // console.log(run1, cycle1);
 
-
 class App {
     #map;
     #mapZoomLevel = 13;
@@ -283,7 +282,6 @@ class App {
         //workout.click();
     }
 
-    
     _setLocalStorage() {
         localStorage.setItem('workouts', JSON.stringify(this.#workouts));
     }
